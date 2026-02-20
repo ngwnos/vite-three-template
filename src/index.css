@@ -1,0 +1,17 @@
+html,
+body,
+#app {
+  margin: 0;
+  width: 100%;
+  height: 100%;
+}
+
+body {
+  overflow: hidden;
+  background: #0c1018;
+}
+
+#app {
+  display: block;
+  touch-action: none;
+}
