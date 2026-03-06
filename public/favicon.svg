@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" role="img" aria-labelledby="title desc">
+  <title id="title">vite-three-template</title>
+  <desc id="desc">Hash-based favicon generated from the repository name.</desc>
+  <defs>
+    <linearGradient id="bg" x1="8" y1="8" x2="56" y2="56" gradientUnits="userSpaceOnUse">
+      <stop offset="0%" stop-color="hsl(161 62% 14%)" />
+      <stop offset="100%" stop-color="hsl(143 58% 8%)" />
+    </linearGradient>
+  </defs>
+  <rect width="64" height="64" rx="18" fill="url(#bg)" />
+  <g transform="rotate(204 32 32)">
+    <path d="M32 10L54 32L32 54L10 32L32 10Z" fill="hsl(143 82% 58%)" />
+      <path d="M32 18L46 32L32 46L18 32L32 18Z" fill="hsl(143 58% 8%)" />
+      <path d="M32 14L50 32L44 38L26 20L32 14Z" fill="hsl(255 90% 68%)" />
+  </g>
+</svg>

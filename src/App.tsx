@@ -1,8 +1,7 @@
 import { useEffect, useRef } from 'react'
 import * as THREE from 'three'
 import { OrbitControls } from 'three/addons/controls/OrbitControls.js'
-import { MeshBasicNodeMaterial, WebGPURenderer } from 'three/webgpu'
-import { color } from 'three/tsl'
+import { WebGPURenderer } from 'three/webgpu'
 
 function App() {
   const canvasRef = useRef<HTMLCanvasElement>(null)
@@ -18,14 +17,17 @@ function App() {
     }
 
     const scene = new THREE.Scene()
-    scene.background = new THREE.Color(0x111827)
+    scene.background = new THREE.Color(0x000000)
 
     const camera = new THREE.PerspectiveCamera(60, 1, 0.1, 100)
     camera.position.set(2.4, 1.7, 2.8)
 
+    const light = new THREE.DirectionalLight(0xffffff, 3)
+    light.position.set(3, 4, 2)
+    scene.add(light)
+
     const geometry = new THREE.BoxGeometry(1, 1, 1)
-    const material = new MeshBasicNodeMaterial()
-    material.colorNode = color('#4ea8ff')
+    const material = new THREE.MeshStandardMaterial({ color: '#4ea8ff' })
 
     const cube = new THREE.Mesh(geometry, material)
     scene.add(cube)

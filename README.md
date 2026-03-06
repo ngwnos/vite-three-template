@@ -17,8 +17,7 @@ bun run dev
 bun run build
 ```
 
-`bun run setup` updates the checked-in `.tmuxp` file to the current repo name/path and adds it to `~/.tmuxp-projects` when that registry file already exists.
-It is meant for [`tmux-launch`](https://github.com/ngwnos/tmux-launch).
+`bun run setup` updates `.tmuxp`, the page title, and `public/favicon.svg` to match the current folder name. If `~/.tmuxp-projects` already exists, it also adds the repo for [`tmux-launch`](https://github.com/ngwnos/tmux-launch). Otherwise it leaves that alone.
 
 ## Requirement
 
