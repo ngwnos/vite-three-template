@@ -22,6 +22,9 @@ function App() {
     const camera = new THREE.PerspectiveCamera(60, 1, 0.1, 100)
     camera.position.set(2.4, 1.7, 2.8)
 
+    const ambientLight = new THREE.AmbientLight(0xffffff, 0.45)
+    scene.add(ambientLight)
+
     const light = new THREE.DirectionalLight(0xffffff, 3)
     light.position.set(3, 4, 2)
     scene.add(light)
