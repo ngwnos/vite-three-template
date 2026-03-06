@@ -16,6 +16,7 @@
   },
   "private": true,
   "scripts": {
+    "setup": "bun scripts/setup.ts",
     "dev": "vite",
     "build": "tsc -b && vite build",
     "lint": "eslint .",
