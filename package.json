@@ -2,12 +2,13 @@
   "name": "crt",
   "version": "0.0.0",
   "devDependencies": {
+    "@eslint/js": "^9.39.1",
+    "@playwright/test": "^1.58.2",
+    "@types/node": "^24.10.1",
     "@types/react": "^19.2.3",
     "@types/react-dom": "^19.2.3",
-    "@vitejs/plugin-react": "^5.1.1",
-    "@eslint/js": "^9.39.1",
-    "@types/node": "^24.10.1",
     "@types/three": "^0.183.0",
+    "@vitejs/plugin-react": "^5.1.1",
     "eslint": "^9.39.1",
     "globals": "^16.5.0",
     "typescript": "~5.9.3",
@@ -20,7 +21,9 @@
     "dev": "vite",
     "build": "tsc -b && vite build",
     "lint": "eslint .",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "test:e2e:webgpu": "playwright test --project=webgpu",
+    "test:e2e:webgpu:headed": "playwright test --project=webgpu --headed"
   },
   "type": "module",
   "dependencies": {

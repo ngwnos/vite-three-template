@@ -1,7 +1,7 @@
 import { useEffect, useRef } from 'react'
 import * as THREE from 'three'
 import { OrbitControls } from 'three/addons/controls/OrbitControls.js'
-import { WebGPURenderer } from 'three/webgpu'
+import { MeshStandardNodeMaterial, WebGPURenderer } from 'three/webgpu'
 
 function App() {
   const canvasRef = useRef<HTMLCanvasElement>(null)
@@ -30,7 +30,7 @@ function App() {
     scene.add(light)
 
     const geometry = new THREE.BoxGeometry(1, 1, 1)
-    const material = new THREE.MeshStandardMaterial({ color: '#4ea8ff' })
+    const material = new MeshStandardNodeMaterial({ color: '#4ea8ff' })
 
     const cube = new THREE.Mesh(geometry, material)
     scene.add(cube)
@@ -40,12 +40,16 @@ function App() {
 
     let controls: OrbitControls | null = null
     let disposed = false
+    let animationFrameId = 0
 
     const render = () => {
       if (disposed) {
         return
       }
+
+      controls?.update()
       renderer.render(scene, camera)
+      animationFrameId = window.requestAnimationFrame(render)
     }
 
     const onResize = () => {
@@ -54,7 +58,6 @@ function App() {
       camera.aspect = width / Math.max(1, height)
       camera.updateProjectionMatrix()
       renderer.setSize(width, height, false)
-      render()
     }
 
     void (async () => {
@@ -66,18 +69,19 @@ function App() {
       }
 
       controls = new OrbitControls(camera, canvas)
+      controls.enableDamping = true
       controls.target.set(0, 0, 0)
       controls.update()
-      controls.addEventListener('change', render)
 
       window.addEventListener('resize', onResize)
       onResize()
+      render()
     })()
 
     return () => {
       disposed = true
       window.removeEventListener('resize', onResize)
-      controls?.removeEventListener('change', render)
+      window.cancelAnimationFrame(animationFrameId)
       controls?.dispose()
       renderer.dispose()
       geometry.dispose()
