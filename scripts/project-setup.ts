@@ -17,6 +17,7 @@ type TmuxpConfig = {
 export type ProjectSetupContext = {
   repoRoot: string;
   repoName: string;
+  packageJsonPath: string;
   tmuxpPath: string;
   indexHtmlPath: string;
   publicDirPath: string;
@@ -30,6 +31,7 @@ export function createProjectSetupContext(repoRoot = process.cwd()): ProjectSetu
   return {
     repoRoot,
     repoName,
+    packageJsonPath: join(repoRoot, "package.json"),
     tmuxpPath: join(repoRoot, ".tmuxp"),
     indexHtmlPath: join(repoRoot, "index.html"),
     publicDirPath: join(repoRoot, "public"),
@@ -81,6 +83,19 @@ function hashNumber(seed: string, start: number, length: number) {
 
 function hsl(hue: number, saturation: number, lightness: number) {
   return `hsl(${hue} ${saturation}% ${lightness}%)`;
+}
+
+function normalizePackageName(repoName: string) {
+  const normalized = repoName
+    .toLowerCase()
+    .replace(/[^a-z0-9._-]+/g, "-")
+    .replace(/^[._-]+|[._-]+$/g, "");
+
+  if (!normalized) {
+    throw new Error(`Unable to derive a valid package name from ${repoName}.`);
+  }
+
+  return normalized;
 }
 
 function buildFaviconSvg(repoName: string) {
@@ -240,6 +255,35 @@ export async function ensureHtmlTitle(context: ProjectSetupContext) {
   console.log(`Updated index.html metadata for ${context.repoName}.`);
 }
 
+export async function ensurePackageName(context: ProjectSetupContext) {
+  if (!(await exists(context.packageJsonPath))) {
+    throw new Error(`Missing package.json at ${context.packageJsonPath}`);
+  }
+
+  const rawPackageJson = await readFile(context.packageJsonPath, "utf8");
+  let packageJson: {
+    name?: unknown;
+    [key: string]: unknown;
+  };
+
+  try {
+    packageJson = JSON.parse(rawPackageJson) as typeof packageJson;
+  } catch (error) {
+    const message = error instanceof Error ? error.message : "Unknown JSON parse error";
+    throw new Error(`Failed to parse ${context.packageJsonPath}: ${message}`);
+  }
+
+  const nextName = normalizePackageName(context.repoName);
+  if (packageJson.name === nextName) {
+    console.log(`package.json name already matches ${nextName}.`);
+    return;
+  }
+
+  packageJson.name = nextName;
+  await writeFile(context.packageJsonPath, `${JSON.stringify(packageJson, null, 2)}\n`);
+  console.log(`Updated package.json name to ${nextName}.`);
+}
+
 export async function ensureFavicon(context: ProjectSetupContext) {
   await mkdir(context.publicDirPath, { recursive: true });
 
@@ -260,6 +304,7 @@ export async function ensureFavicon(context: ProjectSetupContext) {
 
 export async function runProjectSetup(context = createProjectSetupContext()) {
   await ensureTmuxpConfig(context);
+  await ensurePackageName(context);
   await ensureHtmlTitle(context);
   await ensureFavicon(context);
 }

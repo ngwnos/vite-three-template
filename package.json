@@ -1,5 +1,5 @@
 {
-  "name": "crt",
+  "name": "vite-three-template",
   "version": "0.0.0",
   "devDependencies": {
     "@resvg/resvg-js": "^2.6.2",
