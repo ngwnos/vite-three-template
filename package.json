@@ -21,6 +21,7 @@
     "setup": "bun scripts/setup.ts",
     "init-template": "bun scripts/init-template.ts",
     "dev": "vite",
+    "dev:local": "vite",
     "build": "tsc -b && vite build",
     "lint": "eslint .",
     "preview": "vite preview",

@@ -98,57 +98,72 @@ function normalizePackageName(repoName: string) {
   return normalized;
 }
 
+function createRng(seed: string) {
+  let state = hashNumber(seed, 0, 8) >>> 0;
+
+  return () => {
+    state = (state + 0x6d2b79f5) >>> 0;
+    let next = Math.imul(state ^ (state >>> 15), 1 | state);
+    next ^= next + Math.imul(next ^ (next >>> 7), 61 | next);
+    return ((next ^ (next >>> 14)) >>> 0) / 4294967296;
+  };
+}
+
+function choose<T>(rng: () => number, values: readonly T[]) {
+  return values[Math.floor(rng() * values.length)] ?? values[0];
+}
+
 function buildFaviconSvg(repoName: string) {
+  const rng = createRng(repoName);
   const baseHue = hashNumber(`${repoName}:base`, 0, 8) % 360;
   const accentHue = (baseHue + 110 + (hashNumber(`${repoName}:accent`, 0, 4) % 80)) % 360;
-  const rotation = hashNumber(`${repoName}:rotate`, 0, 4) % 360;
-  const pattern = hashNumber(`${repoName}:pattern`, 0, 2) % 4;
 
-  const bgOuter = hsl(baseHue, 58, 8);
-  const bgInner = hsl((baseHue + 18) % 360, 62, 14);
+  const background = hsl(baseHue, 34, 7);
+  const panelBase = hsl((baseHue + 10) % 360, 42, 14);
   const primary = hsl(baseHue, 82, 58);
   const secondary = hsl(accentHue, 90, 68);
-  const shadow = hsl((baseHue + 220) % 360, 45, 6);
+  const accent = hsl((accentHue + 42) % 360, 94, 78);
+  const colors = [primary, secondary, accent, panelBase] as const;
   const label = escapeXml(repoName);
+  const origin = 2;
+  const cellSize = 15;
 
-  const shapes = [
-    `
-      <rect x="8" y="8" width="48" height="48" rx="14" fill="${primary}" opacity="0.94" />
-      <path d="M16 42L42 16H52L26 42H16Z" fill="${secondary}" />
-      <circle cx="46" cy="46" r="8" fill="${shadow}" opacity="0.35" />
-    `,
-    `
-      <circle cx="32" cy="32" r="19" fill="${primary}" />
-      <path d="M32 10C44 10 54 20 54 32H46C46 24.3 39.7 18 32 18V10Z" fill="${secondary}" />
-      <rect x="13" y="36" width="38" height="8" rx="4" fill="${secondary}" opacity="0.9" />
-    `,
-    `
-      <path d="M32 10L54 32L32 54L10 32L32 10Z" fill="${primary}" />
-      <path d="M32 18L46 32L32 46L18 32L32 18Z" fill="${bgOuter}" />
-      <path d="M32 14L50 32L44 38L26 20L32 14Z" fill="${secondary}" />
-    `,
-    `
-      <rect x="10" y="10" width="20" height="20" rx="6" fill="${primary}" />
-      <rect x="34" y="10" width="20" height="20" rx="6" fill="${secondary}" />
-      <rect x="10" y="34" width="20" height="20" rx="6" fill="${secondary}" opacity="0.92" />
-      <rect x="34" y="34" width="20" height="20" rx="6" fill="${primary}" opacity="0.88" />
-    `,
-  ][pattern];
+  const panels = Array.from({ length: 16 }, (_, index) => {
+    const row = Math.floor(index / 4);
+    const column = index % 4;
+    const x = origin + column * cellSize;
+    const y = origin + row * cellSize;
+    const fill = choose(rng, colors);
+    const mode = Math.floor(rng() * 4);
+
+    if (mode === 0) {
+      return `<rect x="${x + 1}" y="${y + 1}" width="${cellSize - 2}" height="${cellSize - 2}" rx="3.5" fill="${fill}" />`;
+    }
+
+    if (mode === 1) {
+      return `<path d="M${x + 1} ${y + 1}H${x + cellSize - 1}L${x + 1} ${y + cellSize - 1}Z" fill="${fill}" />`;
+    }
+
+    if (mode === 2) {
+      return `<path d="M${x + cellSize - 1} ${y + 1}V${y + cellSize - 1}L${x + 1} ${y + cellSize - 1}Z" fill="${fill}" />`;
+    }
+
+    return `<rect x="${x + 3}" y="${y + 3}" width="${cellSize - 6}" height="${cellSize - 6}" rx="2.5" fill="${fill}" />`;
+  }).join("\n    ");
+
+  const diagonals = Array.from({ length: 2 + (hashNumber(`${repoName}:diagonals`, 0, 2) % 2) }, (_, index) => {
+    const offset = 10 + index * 16 + (hashNumber(`${repoName}:diag:${index}`, 0, 2) % 5);
+    const stroke = index % 2 === 0 ? accent : secondary;
+    return `<path d="M${offset} 64L64 ${offset}" stroke="${stroke}" stroke-width="4.5" stroke-linecap="round" opacity="0.85" />`;
+  }).join("\n    ");
 
   return `<?xml version="1.0" encoding="UTF-8"?>
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" role="img" aria-labelledby="title desc">
   <title id="title">${label}</title>
-  <desc id="desc">Hash-based favicon generated from the repository name.</desc>
-  <defs>
-    <linearGradient id="bg" x1="8" y1="8" x2="56" y2="56" gradientUnits="userSpaceOnUse">
-      <stop offset="0%" stop-color="${bgInner}" />
-      <stop offset="100%" stop-color="${bgOuter}" />
-    </linearGradient>
-  </defs>
-  <rect width="64" height="64" rx="18" fill="url(#bg)" />
-  <g transform="rotate(${rotation} 32 32)">
-    ${shapes.trim()}
-  </g>
+  <desc id="desc">Seeded split-panel favicon generated from the repository name.</desc>
+  <rect width="64" height="64" fill="${background}" />
+  ${panels}
+  ${diagonals}
 </svg>
 `;
 }
