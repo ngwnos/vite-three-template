@@ -1,7 +1,6 @@
 import { createHash } from "node:crypto";
 import { access, mkdir, readFile, writeFile } from "node:fs/promises";
 import { basename, join } from "node:path";
-import { Resvg } from "@resvg/resvg-js";
 
 type TmuxpWindow = {
   name?: string;
@@ -139,7 +138,8 @@ function buildFaviconSvg(repoName: string) {
 `;
 }
 
-function buildFaviconPng(svg: string) {
+async function buildFaviconPng(svg: string) {
+  const { Resvg } = await import("@resvg/resvg-js");
   const image = new Resvg(svg, {
     fitTo: {
       mode: "width",
@@ -244,7 +244,7 @@ export async function ensureFavicon(context: ProjectSetupContext) {
   await mkdir(context.publicDirPath, { recursive: true });
 
   const svg = buildFaviconSvg(context.repoName);
-  const png = buildFaviconPng(svg);
+  const png = await buildFaviconPng(svg);
   const current = (await exists(context.faviconPath)) ? await readFile(context.faviconPath, "utf8") : null;
   const currentPng = (await exists(context.faviconPngPath)) ? await readFile(context.faviconPngPath) : null;
 
