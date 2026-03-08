@@ -36,6 +36,33 @@ export function createProjectSetupContext(repoRoot = process.cwd()): ProjectSetu
   };
 }
 
+function buildDefaultTmuxpConfig(context: ProjectSetupContext): TmuxpConfig {
+  return {
+    session: context.repoName,
+    root: ".",
+    windows: [
+      {
+        name: context.repoName,
+        layout: "vertical",
+        panes: [
+          {
+            name: "start",
+            percent: 10,
+            command: "bun run dev",
+            cwd: ".",
+          },
+          {
+            name: "codex",
+            percent: 90,
+            command: "codex resume",
+            cwd: ".",
+          },
+        ],
+      },
+    ],
+  };
+}
+
 function escapeXml(value: string) {
   return value
     .replaceAll("&", "&amp;")
@@ -120,7 +147,10 @@ export async function exists(path: string) {
 
 export async function ensureTmuxpConfig(context: ProjectSetupContext) {
   if (!(await exists(context.tmuxpPath))) {
-    throw new Error(`Missing tmuxp config at ${context.tmuxpPath}`);
+    const config = buildDefaultTmuxpConfig(context);
+    await writeFile(context.tmuxpPath, `${JSON.stringify(config, null, 2)}\n`);
+    console.log(`Created .tmuxp for ${context.repoName}.`);
+    return;
   }
 
   const rawConfig = await readFile(context.tmuxpPath, "utf8");
