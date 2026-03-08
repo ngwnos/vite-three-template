@@ -2,6 +2,7 @@
   "name": "crt",
   "version": "0.0.0",
   "devDependencies": {
+    "@resvg/resvg-js": "^2.6.2",
     "@eslint/js": "^9.39.1",
     "@playwright/test": "^1.58.2",
     "@types/node": "^24.10.1",

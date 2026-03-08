@@ -1,7 +1,7 @@
 import { useEffect, useRef } from 'react'
 import * as THREE from 'three'
 import { OrbitControls } from 'three/addons/controls/OrbitControls.js'
-import { MeshStandardNodeMaterial, WebGPURenderer } from 'three/webgpu'
+import { WebGPURenderer } from 'three/webgpu'
 
 function App() {
   const canvasRef = useRef<HTMLCanvasElement>(null)
@@ -30,7 +30,9 @@ function App() {
     scene.add(light)
 
     const geometry = new THREE.BoxGeometry(1, 1, 1)
-    const material = new MeshStandardNodeMaterial({ color: '#4ea8ff' })
+    const texture = new THREE.TextureLoader().load('/favicon-128.png')
+    texture.colorSpace = THREE.SRGBColorSpace
+    const material = new THREE.MeshStandardMaterial({ map: texture })
 
     const cube = new THREE.Mesh(geometry, material)
     scene.add(cube)
@@ -85,6 +87,7 @@ function App() {
       controls?.dispose()
       renderer.dispose()
       geometry.dispose()
+      texture.dispose()
       material.dispose()
     }
   }, [])

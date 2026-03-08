@@ -1,6 +1,7 @@
 import { createHash } from "node:crypto";
 import { access, mkdir, readFile, writeFile } from "node:fs/promises";
 import { basename, join } from "node:path";
+import { Resvg } from "@resvg/resvg-js";
 
 type TmuxpWindow = {
   name?: string;
@@ -21,6 +22,7 @@ export type ProjectSetupContext = {
   indexHtmlPath: string;
   publicDirPath: string;
   faviconPath: string;
+  faviconPngPath: string;
 };
 
 export function createProjectSetupContext(repoRoot = process.cwd()): ProjectSetupContext {
@@ -33,6 +35,7 @@ export function createProjectSetupContext(repoRoot = process.cwd()): ProjectSetu
     indexHtmlPath: join(repoRoot, "index.html"),
     publicDirPath: join(repoRoot, "public"),
     faviconPath: join(repoRoot, "public", "favicon.svg"),
+    faviconPngPath: join(repoRoot, "public", "favicon-128.png"),
   };
 }
 
@@ -136,6 +139,17 @@ function buildFaviconSvg(repoName: string) {
 `;
 }
 
+function buildFaviconPng(svg: string) {
+  const image = new Resvg(svg, {
+    fitTo: {
+      mode: "width",
+      value: 128,
+    },
+  }).render();
+
+  return image.asPng();
+}
+
 export async function exists(path: string) {
   try {
     await access(path);
@@ -230,15 +244,18 @@ export async function ensureFavicon(context: ProjectSetupContext) {
   await mkdir(context.publicDirPath, { recursive: true });
 
   const svg = buildFaviconSvg(context.repoName);
+  const png = buildFaviconPng(svg);
   const current = (await exists(context.faviconPath)) ? await readFile(context.faviconPath, "utf8") : null;
+  const currentPng = (await exists(context.faviconPngPath)) ? await readFile(context.faviconPngPath) : null;
 
-  if (current === svg) {
-    console.log(`favicon already matches ${context.repoName}.`);
+  if (current === svg && currentPng?.equals(png)) {
+    console.log(`favicon assets already match ${context.repoName}.`);
     return;
   }
 
   await writeFile(context.faviconPath, svg);
-  console.log(`Updated favicon for ${context.repoName}.`);
+  await writeFile(context.faviconPngPath, png);
+  console.log(`Updated favicon assets for ${context.repoName}.`);
 }
 
 export async function runProjectSetup(context = createProjectSetupContext()) {

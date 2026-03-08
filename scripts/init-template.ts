@@ -110,8 +110,8 @@ try {
   const context = createProjectSetupContext();
 
   await verifyBootstrapPreconditions(context.repoRoot);
-  await runProjectSetup(context);
   await installDependencies(context.repoRoot);
+  await runProjectSetup(context);
   await removeInheritedGitRepo(context.repoRoot);
 } catch (error) {
   const message = error instanceof Error ? error.message : String(error);
