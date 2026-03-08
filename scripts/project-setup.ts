@@ -1,7 +1,6 @@
 import { createHash } from "node:crypto";
 import { access, mkdir, readFile, writeFile } from "node:fs/promises";
 import { basename, join } from "node:path";
-import { homedir } from "node:os";
 
 type TmuxpWindow = {
   name?: string;
@@ -22,7 +21,6 @@ export type ProjectSetupContext = {
   indexHtmlPath: string;
   publicDirPath: string;
   faviconPath: string;
-  registryPath: string;
 };
 
 export function createProjectSetupContext(repoRoot = process.cwd()): ProjectSetupContext {
@@ -35,7 +33,6 @@ export function createProjectSetupContext(repoRoot = process.cwd()): ProjectSetu
     indexHtmlPath: join(repoRoot, "index.html"),
     publicDirPath: join(repoRoot, "public"),
     faviconPath: join(repoRoot, "public", "favicon.svg"),
-    registryPath: process.env.TMUXP_PROJECTS_PATH ?? join(homedir(), ".tmuxp-projects"),
   };
 }
 
@@ -143,8 +140,8 @@ export async function ensureTmuxpConfig(context: ProjectSetupContext) {
     changed = true;
   }
 
-  if (config.root !== context.repoRoot) {
-    config.root = context.repoRoot;
+  if (config.root !== ".") {
+    config.root = ".";
     changed = true;
   }
 
@@ -214,29 +211,8 @@ export async function ensureFavicon(context: ProjectSetupContext) {
   console.log(`Updated favicon for ${context.repoName}.`);
 }
 
-export async function ensureRegistryEntry(context: ProjectSetupContext) {
-  if (!(await exists(context.registryPath))) {
-    console.log(`Skipped tmux-launch registry: ${context.registryPath} does not exist.`);
-    return;
-  }
-
-  const entry = context.tmuxpPath;
-  const rawRegistry = await readFile(context.registryPath, "utf8");
-  const lines = rawRegistry.split(/\r?\n/);
-
-  if (lines.includes(entry)) {
-    console.log(`Registry already contains ${entry}.`);
-    return;
-  }
-
-  const prefix = rawRegistry.length === 0 || rawRegistry.endsWith("\n") ? rawRegistry : `${rawRegistry}\n`;
-  await writeFile(context.registryPath, `${prefix}${entry}\n`);
-  console.log(`Added ${entry} to ${context.registryPath}.`);
-}
-
 export async function runProjectSetup(context = createProjectSetupContext()) {
   await ensureTmuxpConfig(context);
   await ensureHtmlTitle(context);
   await ensureFavicon(context);
-  await ensureRegistryEntry(context);
 }
