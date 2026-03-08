@@ -1,12 +1,13 @@
 import { execFile } from "node:child_process";
 import { rm } from "node:fs/promises";
-import { basename, join } from "node:path";
+import { basename, join, resolve } from "node:path";
 import { promisify } from "node:util";
 import { createProjectSetupContext, exists, runProjectSetup } from "./project-setup";
 
 const execFileAsync = promisify(execFile);
 const defaultTemplateRepoSlug = "ngwnos/vite-three-template";
 const defaultTemplateDirName = "vite-three-template";
+const defaultRemoteName = "origin";
 
 function normalizeGithubRepo(value: string) {
   return value
@@ -15,6 +16,23 @@ function normalizeGithubRepo(value: string) {
     .replace(/\/+$/g, "")
     .replace(/^git@github\.com:/i, "")
     .replace(/^(?:ssh|https?|git):\/\/(?:git@)?github\.com\//i, "");
+}
+
+function normalizeTemplateSource(value: string) {
+  const trimmed = value.trim();
+
+  if (
+    trimmed.startsWith("git@github.com:") ||
+    trimmed.startsWith("http://") ||
+    trimmed.startsWith("https://") ||
+    trimmed.startsWith("ssh://") ||
+    trimmed.startsWith("git://") ||
+    /^[^/]+\/[^/]+$/.test(trimmed)
+  ) {
+    return `github:${normalizeGithubRepo(trimmed)}`;
+  }
+
+  return `path:${resolve(trimmed)}`;
 }
 
 async function runCommand(command: string, args: string[], cwd: string) {
@@ -55,9 +73,9 @@ async function verifyBootstrapPreconditions(repoRoot: string) {
     );
   }
 
-  const remoteName = process.env.TEMPLATE_REMOTE_NAME ?? "origin";
-  const expectedTemplateRepo = normalizeGithubRepo(
-    process.env.TEMPLATE_REPO_SLUG ?? defaultTemplateRepoSlug,
+  const remoteName = process.env.TEMPLATE_REMOTE_NAME ?? defaultRemoteName;
+  const expectedTemplateRepo = normalizeTemplateSource(
+    process.env.TEMPLATE_REMOTE_SOURCE ?? process.env.TEMPLATE_REPO_SLUG ?? defaultTemplateRepoSlug,
   );
   let remoteUrl = "";
 
@@ -69,27 +87,18 @@ async function verifyBootstrapPreconditions(repoRoot: string) {
     );
   }
 
-  const actualTemplateRepo = normalizeGithubRepo(remoteUrl);
+  const actualTemplateRepo = normalizeTemplateSource(remoteUrl);
   if (actualTemplateRepo !== expectedTemplateRepo) {
     throw new Error(
-      `Refusing to run init-template because ${remoteName} points to ${remoteUrl}, not ${expectedTemplateRepo}.`,
+      `Refusing to run init-template because ${remoteName} points to ${remoteUrl}, not ${process.env.TEMPLATE_REMOTE_SOURCE ?? process.env.TEMPLATE_REPO_SLUG ?? defaultTemplateRepoSlug}.`,
     );
   }
-
-  await runCommand("git", ["var", "GIT_AUTHOR_IDENT"], repoRoot);
 }
 
-async function initializeFreshGitRepo(repoRoot: string) {
+async function removeInheritedGitRepo(repoRoot: string) {
   const gitPath = join(repoRoot, ".git");
   await rm(gitPath, { recursive: true, force: true });
-  console.log("Removed existing git history.");
-
-  await runCommand("git", ["init"], repoRoot);
-  await runCommand("git", ["branch", "-M", "main"], repoRoot);
-  await runCommand("git", ["add", "."], repoRoot);
-  await runCommand("git", ["commit", "-m", "Initial commit"], repoRoot);
-
-  console.log("Created a fresh local git repo on main with an Initial commit.");
+  console.log("Removed inherited git history. Project is left without a git repo.");
 }
 
 try {
@@ -97,7 +106,7 @@ try {
 
   await verifyBootstrapPreconditions(context.repoRoot);
   await runProjectSetup(context);
-  await initializeFreshGitRepo(context.repoRoot);
+  await removeInheritedGitRepo(context.repoRoot);
 } catch (error) {
   const message = error instanceof Error ? error.message : String(error);
   console.error(message);
