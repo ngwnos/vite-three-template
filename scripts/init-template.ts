@@ -101,11 +101,17 @@ async function removeInheritedGitRepo(repoRoot: string) {
   console.log("Removed inherited git history. Project is left without a git repo.");
 }
 
+async function installDependencies(repoRoot: string) {
+  await runCommand("bun", ["install"], repoRoot);
+  console.log("Installed project dependencies with bun.");
+}
+
 try {
   const context = createProjectSetupContext();
 
   await verifyBootstrapPreconditions(context.repoRoot);
   await runProjectSetup(context);
+  await installDependencies(context.repoRoot);
   await removeInheritedGitRepo(context.repoRoot);
 } catch (error) {
   const message = error instanceof Error ? error.message : String(error);
