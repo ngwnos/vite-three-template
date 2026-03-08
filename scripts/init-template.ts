@@ -2,7 +2,7 @@ import { execFile } from "node:child_process";
 import { rm } from "node:fs/promises";
 import { basename, join, resolve } from "node:path";
 import { promisify } from "node:util";
-import { createProjectSetupContext, exists, runProjectSetup } from "./project-setup";
+import { createProjectSetupContext, exists } from "./project-setup";
 
 const execFileAsync = promisify(execFile);
 const defaultTemplateRepoSlug = "ngwnos/vite-three-template";
@@ -106,12 +106,22 @@ async function installDependencies(repoRoot: string) {
   console.log("Installed project dependencies with bun.");
 }
 
+async function runSetup(repoRoot: string) {
+  const result = await runCommand("bun", ["run", "setup"], repoRoot);
+  if (result.stdout) {
+    console.log(result.stdout);
+  }
+  if (result.stderr) {
+    console.error(result.stderr);
+  }
+}
+
 try {
   const context = createProjectSetupContext();
 
   await verifyBootstrapPreconditions(context.repoRoot);
   await installDependencies(context.repoRoot);
-  await runProjectSetup(context);
+  await runSetup(context.repoRoot);
   await removeInheritedGitRepo(context.repoRoot);
 } catch (error) {
   const message = error instanceof Error ? error.message : String(error);
