@@ -56,9 +56,8 @@ function buildDefaultTmuxpConfig(context: ProjectSetupContext): TmuxpConfig {
             cwd: ".",
           },
           {
-            name: "codex",
+            name: "work",
             percent: 90,
-            command: "codex resume",
             cwd: ".",
           },
         ],
@@ -223,6 +222,36 @@ export async function ensureTmuxpConfig(context: ProjectSetupContext) {
   if (firstWindow && firstWindow.name !== context.repoName) {
     firstWindow.name = context.repoName;
     changed = true;
+  }
+
+  const panes = Array.isArray(firstWindow?.panes) ? (firstWindow?.panes as Array<Record<string, unknown>>) : null;
+  const secondPane = panes?.[1];
+
+  if (!panes) {
+    config.windows = buildDefaultTmuxpConfig(context).windows;
+    changed = true;
+  } else if (!secondPane) {
+    panes[1] = {
+      name: "work",
+      percent: 90,
+      cwd: ".",
+    };
+    changed = true;
+  } else {
+    if (secondPane.name !== "work") {
+      secondPane.name = "work";
+      changed = true;
+    }
+
+    if (secondPane.cwd !== ".") {
+      secondPane.cwd = ".";
+      changed = true;
+    }
+
+    if ("command" in secondPane) {
+      delete secondPane.command;
+      changed = true;
+    }
   }
 
   if (!changed) {
