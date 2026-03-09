@@ -26,6 +26,7 @@
     "lint": "eslint .",
     "preview": "vite preview",
     "test:e2e:webgpu": "playwright test --project=webgpu",
+    "test:e2e:webgpu:orca": "ORCA_E2E_ORCA=1 playwright test --project=webgpu",
     "test:e2e:webgpu:headed": "playwright test --project=webgpu --headed"
   },
   "type": "module",
