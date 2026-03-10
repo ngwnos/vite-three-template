@@ -2,23 +2,10 @@ import { createHash } from "node:crypto";
 import { access, mkdir, readFile, writeFile } from "node:fs/promises";
 import { basename, join } from "node:path";
 
-type TmuxpWindow = {
-  name?: string;
-  [key: string]: unknown;
-};
-
-type TmuxpConfig = {
-  session?: string;
-  root?: string;
-  windows?: TmuxpWindow[];
-  [key: string]: unknown;
-};
-
 export type ProjectSetupContext = {
   repoRoot: string;
   repoName: string;
   packageJsonPath: string;
-  tmuxpPath: string;
   indexHtmlPath: string;
   publicDirPath: string;
   faviconPath: string;
@@ -32,37 +19,10 @@ export function createProjectSetupContext(repoRoot = process.cwd()): ProjectSetu
     repoRoot,
     repoName,
     packageJsonPath: join(repoRoot, "package.json"),
-    tmuxpPath: join(repoRoot, ".tmuxp"),
     indexHtmlPath: join(repoRoot, "index.html"),
     publicDirPath: join(repoRoot, "public"),
     faviconPath: join(repoRoot, "public", "favicon.svg"),
     faviconPngPath: join(repoRoot, "public", "favicon-128.png"),
-  };
-}
-
-function buildDefaultTmuxpConfig(context: ProjectSetupContext): TmuxpConfig {
-  return {
-    session: context.repoName,
-    root: ".",
-    windows: [
-      {
-        name: context.repoName,
-        layout: "vertical",
-        panes: [
-          {
-            name: "start",
-            percent: 10,
-            command: "bun run dev",
-            cwd: ".",
-          },
-          {
-            name: "work",
-            percent: 90,
-            cwd: ".",
-          },
-        ],
-      },
-    ],
   };
 }
 
@@ -188,81 +148,6 @@ export async function exists(path: string) {
   }
 }
 
-export async function ensureTmuxpConfig(context: ProjectSetupContext) {
-  if (!(await exists(context.tmuxpPath))) {
-    const config = buildDefaultTmuxpConfig(context);
-    await writeFile(context.tmuxpPath, `${JSON.stringify(config, null, 2)}\n`);
-    console.log(`Created .tmuxp for ${context.repoName}.`);
-    return;
-  }
-
-  const rawConfig = await readFile(context.tmuxpPath, "utf8");
-  let config: TmuxpConfig;
-
-  try {
-    config = JSON.parse(rawConfig) as TmuxpConfig;
-  } catch (error) {
-    const message = error instanceof Error ? error.message : "Unknown JSON parse error";
-    throw new Error(`Failed to parse ${context.tmuxpPath}: ${message}`);
-  }
-
-  let changed = false;
-
-  if (config.session !== context.repoName) {
-    config.session = context.repoName;
-    changed = true;
-  }
-
-  if (config.root !== ".") {
-    config.root = ".";
-    changed = true;
-  }
-
-  const firstWindow = config.windows?.[0];
-  if (firstWindow && firstWindow.name !== context.repoName) {
-    firstWindow.name = context.repoName;
-    changed = true;
-  }
-
-  const panes = Array.isArray(firstWindow?.panes) ? (firstWindow?.panes as Array<Record<string, unknown>>) : null;
-  const secondPane = panes?.[1];
-
-  if (!panes) {
-    config.windows = buildDefaultTmuxpConfig(context).windows;
-    changed = true;
-  } else if (!secondPane) {
-    panes[1] = {
-      name: "work",
-      percent: 90,
-      cwd: ".",
-    };
-    changed = true;
-  } else {
-    if (secondPane.name !== "work") {
-      secondPane.name = "work";
-      changed = true;
-    }
-
-    if (secondPane.cwd !== ".") {
-      secondPane.cwd = ".";
-      changed = true;
-    }
-
-    if ("command" in secondPane) {
-      delete secondPane.command;
-      changed = true;
-    }
-  }
-
-  if (!changed) {
-    console.log(`.tmuxp already matches ${context.repoName}.`);
-    return;
-  }
-
-  await writeFile(context.tmuxpPath, `${JSON.stringify(config, null, 2)}\n`);
-  console.log(`Updated .tmuxp for ${context.repoName}.`);
-}
-
 export async function ensureHtmlTitle(context: ProjectSetupContext) {
   if (!(await exists(context.indexHtmlPath))) {
     throw new Error(`Missing HTML entry at ${context.indexHtmlPath}`);
@@ -347,7 +232,6 @@ export async function ensureFavicon(context: ProjectSetupContext) {
 }
 
 export async function runProjectSetup(context = createProjectSetupContext()) {
-  await ensureTmuxpConfig(context);
   await ensurePackageName(context);
   await ensureHtmlTitle(context);
   await ensureFavicon(context);
