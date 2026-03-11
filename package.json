@@ -2,7 +2,6 @@
   "name": "vite-three-template",
   "version": "0.0.0",
   "devDependencies": {
-    "@resvg/resvg-js": "^2.6.2",
     "@eslint/js": "^9.39.1",
     "@playwright/test": "^1.58.2",
     "@types/node": "^24.10.1",
@@ -18,10 +17,7 @@
   },
   "private": true,
   "scripts": {
-    "setup": "bun scripts/setup.ts",
-    "init-template": "bun scripts/init-template.ts",
     "dev": "vite",
-    "dev:local": "vite",
     "build": "tsc -b && vite build",
     "lint": "eslint .",
     "preview": "vite preview",
